@@ -20,8 +20,10 @@ contract Test {
         string memory str
     ) public pure returns (string memory) {
         bytes memory bytesStr = bytes(str);
-        for (uint i = 0; i <= bytesStr.length / 2; i++) {
+        for (uint i = 0; i <= (bytesStr.length - 1) / 2; i++) {
+            bytes1 temp = bytesStr[i];
             bytesStr[i] = bytesStr[bytesStr.length - i - 1];
+            bytesStr[bytesStr.length - i - 1] = temp;
         }
         return string(bytesStr);
     }
@@ -29,17 +31,20 @@ contract Test {
     // 整数转罗马数字
     function intToRoman(uint number) public pure returns (string memory) {
         string memory result;
+        // 整除1000，拼接M
         uint divideFirst = number / 1000;
-        for (uint i = 0; i <= divideFirst; i++) {
+        for (uint i = 0; i < divideFirst; i++) {
             result = string.concat(result, "M");
         }
 
+        // 整除100，处理百位上的罗马数字
         uint divideSecond = (number - divideFirst * 1000) / 100;
         result = string.concat(
             result,
             intToRomanItem(divideSecond, "C", "D", "M")
         );
 
+        // 整除10，处理十位上的罗马数字
         uint divideThird = (number - divideFirst * 1000 - divideSecond * 100) /
             10;
         result = string.concat(
@@ -47,6 +52,7 @@ contract Test {
             intToRomanItem(divideThird, "X", "L", "C")
         );
 
+        // 处理个位上的罗马数字
         uint divideFour = number -
             divideFirst *
             1000 -
@@ -70,7 +76,7 @@ contract Test {
     ) private pure returns (string memory) {
         string memory str;
         if (divide >= 1 && divide <= 3) {
-            for (uint i = 0; i <= divide; i++) {
+            for (uint i = 0; i < divide; i++) {
                 str = string.concat(str, str1);
             }
             return str;
@@ -86,7 +92,7 @@ contract Test {
 
         if (divide >= 6 && divide <= 8) {
             str = str2;
-            for (uint i = 0; i <= divide - 5; i++) {
+            for (uint i = 0; i < divide - 5; i++) {
                 str = string.concat(str, str1);
             }
             return str;
@@ -102,31 +108,34 @@ contract Test {
     // 罗马数字转整数
     function romanToInt(string memory s) public view returns (uint) {
         uint result;
+        // 将字符串转换成动态字节数组
         bytes memory strBytes = bytes(s);
+        // 减去两倍的数，防止越界
+        uint diff;
         for (uint i = 0; i < strBytes.length; i++) {
             bytes1 item = strBytes[i];
             result += romanToIntMap[item];
-            // 满足条件会减去两倍
+            // 1放在5或者10的右边时，会减去两倍
             if (i < strBytes.length - 1) {
                 if (
                     item == 0x49 &&
                     (strBytes[i + 1] == 0x56 || strBytes[i + 1] == 0x58)
                 ) {
-                    result -= romanToIntMap[item] * 2;
+                    diff += romanToIntMap[item] * 2;
                 } else if (
                     item == 0x58 &&
                     (strBytes[i + 1] == 0x4c || strBytes[i + 1] == 0x43)
                 ) {
-                    result -= romanToIntMap[item] * 2;
+                    diff += romanToIntMap[item] * 2;
                 } else if (
                     item == 0x43 &&
                     (strBytes[i + 1] == 0x44 || strBytes[i + 1] == 0x4d)
                 ) {
-                    result -= romanToIntMap[item] * 2;
+                    diff += romanToIntMap[item] * 2;
                 }
             }
         }
-        return result;
+        return result - diff;
     }
 
     // 合并两个有序数组
@@ -134,24 +143,25 @@ contract Test {
         uint256[] memory arr1,
         uint256[] memory arr2
     ) public pure returns (uint256[] memory) {
-        uint256[] memory resultArr;
+        uint256[] memory resultArr = new uint256[](arr1.length + arr2.length);
         uint256 resultIndex;
         uint256 arr2Index;
-
         for (uint i = 0; i < arr1.length; i++) {
             for (uint j = arr2Index; j < arr2.length; j++) {
                 if (arr1[i] >= arr2[j]) {
                     resultArr[resultIndex] = arr2[j];
+                    resultIndex++;
                     arr2Index++;
                 } else {
-                    resultArr[resultIndex] = arr1[i];
                     break;
                 }
-                resultIndex++;
             }
+            resultArr[resultIndex] = arr1[i];
+            resultIndex++;
         }
 
-        if (arr2Index + 1 < arr2.length) {
+        // arr1的最大值小于arr2的最大值
+        if (arr2Index <= arr2.length - 1) {
             for (uint256 j = arr2Index; j < arr2.length; j++) {
                 resultArr[resultIndex] = (arr2[j]);
             }
